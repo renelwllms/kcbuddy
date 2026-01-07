@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KCBuddy</title>
+  </head>
+  <body>
+    <div id="root">Loading KCBuddy...</div>
+    <script>
+      (function () {
+        function showBootError(message) {
+          var panel = document.getElementById("boot-error-panel");
+          if (!panel) {
+            panel = document.createElement("div");
+            panel.id = "boot-error-panel";
+            panel.style.position = "fixed";
+            panel.style.inset = "12px";
+            panel.style.background = "rgba(20, 20, 25, 0.92)";
+            panel.style.color = "#fff";
+            panel.style.padding = "16px";
+            panel.style.borderRadius = "12px";
+            panel.style.zIndex = "9999";
+            panel.style.overflow = "auto";
+            panel.style.fontFamily = "monospace";
+            document.body.appendChild(panel);
+          }
+          panel.textContent = message;
+        }
+
+        window.addEventListener("error", function (event) {
+          showBootError("Runtime error: " + (event.message || "unknown"));
+        });
+
+        window.addEventListener("unhandledrejection", function (event) {
+          showBootError("Unhandled rejection: " + String(event.reason || "unknown"));
+        });
+
+        setTimeout(function () {
+          if (!window.__KC_BOOTED__) {
+            showBootError(
+              "KCBuddy failed to start. This usually means the browser cannot run modern JavaScript modules or a runtime error occurred."
+            );
+          }
+        }, 3000);
+      })();
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
