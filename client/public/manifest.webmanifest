@@ -1,0 +1,17 @@
+{
+  "name": "KCBuddy",
+  "short_name": "KCBuddy",
+  "description": "Family chore management with rewards and goals.",
+  "start_url": "/app",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#fff7e8",
+  "theme_color": "#ff6f91",
+  "icons": [
+    {
+      "src": "/icons/kcbuddy-logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}

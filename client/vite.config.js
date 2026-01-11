@@ -1,6 +1,22 @@
 import { defineConfig } from "vite";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import react from "@vitejs/plugin-react";
 import legacy from "@vitejs/plugin-legacy";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function prerenderPlugin() {
+  return {
+    name: "kcbuddy-prerender",
+    apply: "build",
+    async closeBundle() {
+      const moduleUrl = pathToFileURL(path.join(__dirname, "prerender.js")).href;
+      const { run } = await import(moduleUrl);
+      await run();
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
@@ -8,7 +24,8 @@ export default defineConfig({
     legacy({
       targets: ["defaults", "not IE 11"],
       modernPolyfills: true
-    })
+    }),
+    prerenderPlugin()
   ],
   server: {
     port: 5173,

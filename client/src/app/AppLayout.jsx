@@ -1,28 +1,37 @@
-import { useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
-import AuthModal from "../components/AuthModal.jsx";
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { clearSession } from "../lib/session.js";
+import { enableAppPwa } from "./pwa.js";
 
-function readSession() {
-  const role = localStorage.getItem("kcbuddy_role");
-  if (!role) {
-    return null;
-  }
+export default function AppLayout({ session }) {
+  const navigate = useNavigate();
+  const [currentSession, setCurrentSession] = useState(session);
 
-  return {
-    role,
-    name: localStorage.getItem("kcbuddy_name") || ""
-  };
-}
+  useEffect(() => {
+    enableAppPwa();
+  }, []);
 
-export default function AppLayout() {
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [session, setSession] = useState(() => readSession());
+  const navLinks = useMemo(() => {
+    if (currentSession?.role === "kid") {
+      return [
+        { to: "/app/kid", label: "Kid View" },
+        { to: "/app/goals", label: "Goals" }
+      ];
+    }
+
+    return [
+      { to: "/app/parent", label: "Parent View" },
+      { to: "/app/kid", label: "Kid View" },
+      { to: "/app/chores", label: "Chores" },
+      { to: "/app/submissions", label: "Approvals" },
+      { to: "/app/goals", label: "Goals" }
+    ];
+  }, [currentSession?.role]);
 
   const handleLogout = () => {
-    localStorage.removeItem("kcbuddy_token");
-    localStorage.removeItem("kcbuddy_role");
-    localStorage.removeItem("kcbuddy_name");
-    setSession(null);
+    clearSession();
+    setCurrentSession(null);
+    navigate("/app/login", { replace: true });
   };
 
   return (
@@ -36,41 +45,30 @@ export default function AppLayout() {
           </div>
         </div>
         <div className="app-actions">
-          {session ? (
-            <div className="session-pill">
-              <span>
-                Signed in: {session.role} {session.name ? `(${session.name})` : ""}
-              </span>
-              <button className="secondary" onClick={handleLogout}>
-                Log out
-              </button>
-            </div>
-          ) : (
-            <button className="primary" onClick={() => setLoginOpen(true)}>
-              Log in with Code
+          <div className="session-pill">
+            <span>
+              Signed in: {currentSession?.role}{" "}
+              {currentSession?.name ? `(${currentSession.name})` : ""}
+            </span>
+            <button className="secondary" onClick={handleLogout}>
+              Log out
             </button>
-          )}
+          </div>
           <Link className="ghost" to="/">Marketing Site</Link>
         </div>
       </header>
       <div className="app-body">
         <aside className="side-nav">
-          <NavLink to="/app/parent">Parent View</NavLink>
-          <NavLink to="/app/kid">Kid View</NavLink>
-          <NavLink to="/app/chores">Chores</NavLink>
-          <NavLink to="/app/submissions">Approvals</NavLink>
-          <NavLink to="/app/goals">Goals</NavLink>
+          {navLinks.map((link) => (
+            <NavLink key={link.to} to={link.to}>
+              {link.label}
+            </NavLink>
+          ))}
         </aside>
         <section className="content">
           <Outlet />
         </section>
       </div>
-      <AuthModal
-        open={loginOpen}
-        mode="login"
-        onClose={() => setLoginOpen(false)}
-        onSuccess={() => setSession(readSession())}
-      />
     </div>
   );
 }

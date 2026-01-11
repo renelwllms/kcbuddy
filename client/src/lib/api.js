@@ -1,6 +1,10 @@
-const API_BASE = `${window.location.origin}/api`;
+const API_BASE =
+  typeof window === "undefined" ? "/api" : `${window.location.origin}/api`;
 
 function getAuthToken() {
+  if (typeof window === "undefined") {
+    return null;
+  }
   return localStorage.getItem("kcbuddy_token");
 }
 
@@ -17,11 +21,11 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
-export function registerFamily({ familyName, parentName }) {
+export function registerFamily({ familyName, parentName, email }) {
   return apiFetch("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ familyName, parentName })
+    body: JSON.stringify({ familyName, parentName, email })
   });
 }
 

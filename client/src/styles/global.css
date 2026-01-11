@@ -121,8 +121,45 @@ main {
   margin-bottom: 12px;
 }
 
+.page-title {
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-family: var(--font-ui);
+  margin: 6px 0 12px;
+}
+
+.definition {
+  font-size: 1.05rem;
+  color: var(--ink);
+  margin: 10px 0;
+}
+
+.definition.detail {
+  color: var(--muted);
+}
+
 .lead {
   font-size: 1.05rem;
+  color: var(--muted);
+}
+
+.benefit-list {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.benefit-list li {
+  display: grid;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.benefit-list span {
   color: var(--muted);
 }
 
@@ -138,6 +175,18 @@ main {
   border-radius: var(--radius);
   padding: 24px;
   box-shadow: var(--shadow);
+}
+
+.hero-visuals {
+  display: grid;
+  gap: 18px;
+}
+
+.hero-scene {
+  width: 100%;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  object-fit: cover;
 }
 
 .hero-card ul {
@@ -173,6 +222,14 @@ main {
   margin-bottom: 24px;
 }
 
+.features-intro {
+  margin-bottom: 24px;
+}
+
+.overview {
+  margin-bottom: 32px;
+}
+
 .feature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -194,6 +251,28 @@ main {
   border-radius: 16px;
 }
 
+.faq-section {
+  margin-top: 40px;
+  display: grid;
+  gap: 18px;
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.faq-item h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.faq-item p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .footer {
   display: flex;
   justify-content: space-between;
@@ -212,7 +291,9 @@ main {
 }
 
 .app-shell {
-  background: linear-gradient(135deg, rgba(69, 194, 240, 0.1), rgba(88, 209, 141, 0.1));
+  background: radial-gradient(circle at top right, rgba(255, 180, 90, 0.18), transparent 40%),
+    radial-gradient(circle at 20% 30%, rgba(69, 194, 240, 0.18), transparent 45%),
+    linear-gradient(135deg, rgba(69, 194, 240, 0.08), rgba(88, 209, 141, 0.1));
 }
 
 .app-header {
@@ -222,6 +303,10 @@ main {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.app-header.login-header {
+  padding-top: 24px;
 }
 
 .app-actions {
@@ -235,7 +320,7 @@ main {
   display: flex;
   gap: 12px;
   align-items: center;
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   padding: 8px 14px;
   border-radius: 999px;
   box-shadow: var(--shadow);
@@ -253,7 +338,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
   padding: 18px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -265,11 +350,17 @@ main {
   border-radius: 12px;
   font-weight: 600;
   background: #f6f6f9;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .side-nav a.active {
   background: var(--ink);
   color: white;
+}
+
+.side-nav a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(28, 27, 32, 0.12);
 }
 
 .content {
@@ -568,6 +659,75 @@ main {
 .success-block {
   display: grid;
   gap: 16px;
+}
+
+.login-shell {
+  background: radial-gradient(circle at top left, rgba(255, 180, 90, 0.22), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(88, 209, 141, 0.18), transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 247, 255, 0.9));
+}
+
+.login-main {
+  flex: 1;
+  padding: 24px 8vw 64px;
+}
+
+.login-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 32px;
+  align-items: center;
+  animation: floatIn 0.8s ease;
+}
+
+.login-copy h1 {
+  font-size: clamp(2rem, 3.2vw, 3.2rem);
+  font-family: var(--font-ui);
+  margin-bottom: 12px;
+}
+
+.login-highlights {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.login-highlights div {
+  background: rgba(255, 255, 255, 0.8);
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.login-highlights span {
+  color: var(--muted);
+  display: block;
+  font-size: 0.9rem;
+}
+
+.login-card {
+  background: white;
+  border-radius: var(--radius);
+  padding: 26px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 18px;
+}
+
+.login-card-header h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-ui);
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.login-help {
+  display: grid;
+  gap: 12px;
+  align-items: start;
 }
 
 @media (max-width: 900px) {

@@ -57,6 +57,9 @@ setInterval(cleanupUploads, 12 * 60 * 60 * 1000);
 
 app.use("/uploads", express.static(uploadDir));
 app.use(express.static(clientDist));
+app.get("/app*", (req, res) => {
+  res.sendFile(path.join(clientDist, "app", "index.html"));
+});
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
 });

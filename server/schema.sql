@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS parents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_id UUID NOT NULL REFERENCES families(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  email TEXT,
   login_code TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

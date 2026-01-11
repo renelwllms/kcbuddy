@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { pool } = require("../db");
+const { sendFamilyWelcomeEmail } = require("../services/email");
 
 const router = express.Router();
 
@@ -16,9 +17,10 @@ function signToken(payload) {
 
 router.post("/register", async (req, res) => {
   const { familyName, parentName } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim() : "";
 
-  if (!familyName || !parentName) {
-    return res.status(400).json({ error: "familyName and parentName are required" });
+  if (!familyName || !parentName || !email) {
+    return res.status(400).json({ error: "familyName, parentName, and email are required" });
   }
 
   const familyCode = generateCode("FAM");
@@ -36,8 +38,8 @@ router.post("/register", async (req, res) => {
     const familyId = familyResult.rows[0].id;
 
     const parentResult = await client.query(
-      "INSERT INTO parents (family_id, name, login_code) VALUES ($1, $2, $3) RETURNING id",
-      [familyId, parentName, parentCode]
+      "INSERT INTO parents (family_id, name, email, login_code) VALUES ($1, $2, $3, $4) RETURNING id",
+      [familyId, parentName, email, parentCode]
     );
 
     await client.query("COMMIT");
@@ -46,6 +48,17 @@ router.post("/register", async (req, res) => {
       role: "parent",
       familyId,
       userId: parentResult.rows[0].id
+    });
+
+    sendFamilyWelcomeEmail({
+      to: email,
+      familyName,
+      familyCode,
+      parentName,
+      parentCode
+    }).catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn("Registration email failed:", err.message);
     });
 
     return res.status(201).json({

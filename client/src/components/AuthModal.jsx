@@ -5,6 +5,7 @@ import { loginWithCode, registerFamily } from "../lib/api.js";
 const initialForm = {
   familyName: "",
   parentName: "",
+  email: "",
   code: ""
 };
 
@@ -40,7 +41,8 @@ export default function AuthModal({ open, mode, onClose, onSuccess }) {
       if (isSignup) {
         const response = await registerFamily({
           familyName: form.familyName.trim(),
-          parentName: form.parentName.trim()
+          parentName: form.parentName.trim(),
+          email: form.email.trim()
         });
         setResult(response);
         setStatus("success");
@@ -92,6 +94,17 @@ export default function AuthModal({ open, mode, onClose, onSuccess }) {
                   required
                 />
               </label>
+              <label className="field">
+                Email address
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="jamie@example.com"
+                  required
+                />
+              </label>
             </>
           ) : (
             <label className="field">
@@ -121,6 +134,9 @@ export default function AuthModal({ open, mode, onClose, onSuccess }) {
         <div className="success-block">
           <p className="notice success">
             Family account created. Save these codes for your household.
+          </p>
+          <p className="notice">
+            We emailed your family code and login details.
           </p>
           <div className="code-block">
             <strong>Family code</strong>
