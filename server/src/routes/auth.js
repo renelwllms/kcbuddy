@@ -1,6 +1,7 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator } = rateLimit;
 const { pool } = require("../db");
 const { sendFamilyWelcomeEmail } = require("../services/email");
 const { generateLoginCode, hashLoginCode, normalizeLoginCode } = require("../utils/loginCodes");
@@ -45,9 +46,10 @@ const authCodeLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
+  keyGenerator: (req, res) => {
     const code = normalizeLoginCode(req.body?.code || "");
-    return code ? `${req.ip}:${code}` : req.ip;
+    const ipKey = ipKeyGenerator(req, res);
+    return code ? `${ipKey}:${code}` : ipKey;
   }
 });
 

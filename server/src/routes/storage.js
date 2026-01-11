@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const multer = require("multer");
+const rateLimit = require("express-rate-limit");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { createPresignedUpload } = require("../storage/s3");
 
@@ -28,6 +29,25 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }
 });
+
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+function sanitizePathSegment(value) {
+  return String(value).replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function resolveUploadPath(filename) {
+  const resolved = path.resolve(uploadRoot, filename);
+  if (!resolved.startsWith(`${uploadRoot}${path.sep}`)) {
+    throw new Error("Invalid upload path");
+  }
+  return resolved;
+}
 
 async function detectFileType(buffer) {
   const { fileTypeFromBuffer } = await import("file-type");
@@ -56,7 +76,7 @@ router.post("/presign", async (req, res) => {
   }
 });
 
-router.post("/upload", upload.single("photo"), async (req, res) => {
+router.post("/upload", uploadLimiter, upload.single("photo"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "photo is required" });
   }
@@ -71,8 +91,13 @@ router.post("/upload", upload.single("photo"), async (req, res) => {
 
     const ext = detected.ext === "jpeg" ? "jpg" : detected.ext;
     const id = crypto.randomUUID();
-    const filename = `family-${req.user.familyId}-kid-${req.user.userId}-${id}.${ext}`;
-    const destination = path.join(uploadRoot, filename);
+    const familyId = sanitizePathSegment(req.user.familyId);
+    const userId = sanitizePathSegment(req.user.userId);
+    if (!familyId || !userId) {
+      return res.status(400).json({ error: "Invalid user context" });
+    }
+    const filename = `family-${familyId}-kid-${userId}-${id}.${ext}`;
+    const destination = resolveUploadPath(filename);
     await fsp.writeFile(destination, buffer, { flag: "wx" });
     const publicUrl = `/uploads/${filename}`;
     return res.json({ photoUrl: publicUrl });

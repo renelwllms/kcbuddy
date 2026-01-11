@@ -5,6 +5,7 @@ const fs = require("fs/promises");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const authRoutes = require("./routes/auth");
 const kidsRoutes = require("./routes/kids");
 const choresRoutes = require("./routes/chores");
@@ -76,13 +77,20 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 
+const storageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/kids", kidsRoutes);
 app.use("/api/chores", choresRoutes);
 app.use("/api/submissions", submissionsRoutes);
 app.use("/api/goals", goalsRoutes);
-app.use("/api/storage", storageRoutes);
+app.use("/api/storage", storageLimiter, storageRoutes);
 
 const clientDist = path.join(__dirname, "..", "..", "client", "dist");
 const uploadDir = path.join(__dirname, "..", "..", "uploads");
@@ -124,10 +132,11 @@ app.use(
   })
 );
 app.use(express.static(clientDist));
-app.get("/app*", (req, res) => {
-  res.sendFile(path.join(clientDist, "app", "index.html"));
+const appIndex = path.join(clientDist, "app", "index.html");
+app.get(/^\/app(\/|$)/, (req, res) => {
+  res.sendFile(appIndex);
 });
-app.get("*", (req, res) => {
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
 });
 
