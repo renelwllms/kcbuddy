@@ -14,7 +14,10 @@ function generateLoginCode(prefix) {
 }
 
 function hashLoginCode(code) {
-  const secret = process.env.LOGIN_CODE_SECRET || process.env.JWT_SECRET || "kcbuddy";
+  const secret = process.env.LOGIN_CODE_SECRET;
+  if (!secret) {
+    throw new Error("LOGIN_CODE_SECRET is required");
+  }
   return crypto.createHmac("sha256", secret).update(code).digest("hex");
 }
 
