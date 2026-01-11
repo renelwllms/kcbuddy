@@ -9,7 +9,14 @@ function requireAuth(req, res, next) {
   }
 
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    const options = {};
+    if (process.env.JWT_ISSUER) {
+      options.issuer = process.env.JWT_ISSUER;
+    }
+    if (process.env.JWT_AUDIENCE) {
+      options.audience = process.env.JWT_AUDIENCE;
+    }
+    req.user = jwt.verify(token, process.env.JWT_SECRET, options);
     return next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid auth token" });

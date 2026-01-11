@@ -1,20 +1,15 @@
 const express = require("express");
-const crypto = require("crypto");
 const { pool } = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { generateLoginCode, hashLoginCode } = require("../utils/loginCodes");
 
 const router = express.Router();
-
-function generateCode(prefix) {
-  const token = crypto.randomBytes(3).toString("hex").toUpperCase();
-  return `${prefix}-${token}`;
-}
 
 router.use(requireAuth, requireRole("parent"));
 
 router.get("/", async (req, res) => {
   const result = await pool.query(
-    "SELECT id, name, login_code, avatar_url, goal_amount FROM kids WHERE family_id = $1 ORDER BY name",
+    "SELECT id, name, avatar_url, goal_amount FROM kids WHERE family_id = $1 ORDER BY name",
     [req.user.familyId]
   );
 
@@ -28,10 +23,11 @@ router.post("/", async (req, res) => {
     return res.status(400).json({ error: "name is required" });
   }
 
-  const loginCode = generateCode("KID");
+  const loginCode = generateLoginCode("KID");
+  const loginCodeHash = hashLoginCode(loginCode);
   const result = await pool.query(
     "INSERT INTO kids (family_id, name, login_code, avatar_url, goal_amount) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-    [req.user.familyId, name, loginCode, avatarUrl || null, goalAmount || null]
+    [req.user.familyId, name, loginCodeHash, avatarUrl || null, goalAmount || null]
   );
 
   return res.status(201).json({
@@ -75,7 +71,7 @@ router.put("/:id", async (req, res) => {
   const result = await pool.query(
     `UPDATE kids SET ${updates.join(", ")}
      WHERE id = $${values.length - 1} AND family_id = $${values.length}
-     RETURNING id, name, login_code, avatar_url, goal_amount`,
+     RETURNING id, name, avatar_url, goal_amount`,
     values
   );
 

@@ -6,6 +6,21 @@ const router = express.Router();
 
 router.use(requireAuth);
 
+const publicBase = (process.env.S3_PUBLIC_BASE_URL || "").replace(/\/+$/, "");
+
+function isAllowedPhotoUrl(url) {
+  if (typeof url !== "string" || url.trim() === "") {
+    return false;
+  }
+  if (url.startsWith("/uploads/")) {
+    return !url.includes("..");
+  }
+  if (publicBase) {
+    return url.startsWith(`${publicBase}/`);
+  }
+  return false;
+}
+
 router.get("/", async (req, res) => {
   if (req.user.role === "kid") {
     const result = await pool.query(
@@ -40,6 +55,10 @@ router.post("/", requireRole("kid"), async (req, res) => {
 
   if (!choreId || !photoUrl) {
     return res.status(400).json({ error: "choreId and photoUrl are required" });
+  }
+
+  if (!isAllowedPhotoUrl(photoUrl)) {
+    return res.status(400).json({ error: "photoUrl must be from approved storage" });
   }
 
   const choreResult = await pool.query(

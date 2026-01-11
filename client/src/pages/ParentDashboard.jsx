@@ -151,7 +151,9 @@ export default function ParentDashboard() {
                 <li key={kid.id}>
                   <div>
                     <strong>{kid.name}</strong>
-                    <span>Login code: {kid.login_code || kid.loginCode}</span>
+                    <span>
+                      Login code: {kid.loginCode || "Hidden (shown on creation only)"}
+                    </span>
                   </div>
                   <div className="inline-actions">
                     <span className="amount">

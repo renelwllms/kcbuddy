@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const path = require("path");
 const fs = require("fs");
+const fsp = require("fs/promises");
 const multer = require("multer");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { createPresignedUpload } = require("../storage/s3");
@@ -16,31 +17,32 @@ if (!fs.existsSync(uploadRoot)) {
   fs.mkdirSync(uploadRoot, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadRoot),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
-    const id = crypto.randomUUID();
-    cb(null, `family-${req.user.familyId}-kid-${req.user.userId}-${id}${ext}`);
-  }
-});
+const allowedContentTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif"
+]);
 
 const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only image uploads are allowed"));
-    }
-    return cb(null, true);
-  }
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
+
+async function detectFileType(buffer) {
+  const { fileTypeFromBuffer } = await import("file-type");
+  return fileTypeFromBuffer(buffer);
+}
 
 router.post("/presign", async (req, res) => {
   const { contentType } = req.body;
 
   if (!contentType) {
     return res.status(400).json({ error: "contentType is required" });
+  }
+
+  if (!allowedContentTypes.has(contentType)) {
+    return res.status(400).json({ error: "Only image uploads are allowed" });
   }
 
   const id = crypto.randomUUID();
@@ -54,13 +56,32 @@ router.post("/presign", async (req, res) => {
   }
 });
 
-router.post("/upload", upload.single("photo"), (req, res) => {
+router.post("/upload", upload.single("photo"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "photo is required" });
   }
 
-  const publicUrl = `/uploads/${req.file.filename}`;
-  return res.json({ photoUrl: publicUrl });
+  const buffer = req.file.buffer;
+
+  try {
+    const detected = await detectFileType(buffer);
+    if (!detected || !allowedContentTypes.has(detected.mime)) {
+      return res.status(400).json({ error: "Only jpeg, png, webp, or gif images are allowed" });
+    }
+
+    const ext = detected.ext === "jpeg" ? "jpg" : detected.ext;
+    const id = crypto.randomUUID();
+    const filename = `family-${req.user.familyId}-kid-${req.user.userId}-${id}.${ext}`;
+    const destination = path.join(uploadRoot, filename);
+    await fsp.writeFile(destination, buffer, { flag: "wx" });
+    const publicUrl = `/uploads/${filename}`;
+    return res.json({ photoUrl: publicUrl });
+  } catch (err) {
+    if (err && err.code === "EEXIST") {
+      return res.status(500).json({ error: "Upload collision, try again" });
+    }
+    return res.status(500).json({ error: "Unable to save upload" });
+  }
 });
 
 module.exports = router;

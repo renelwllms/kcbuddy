@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs/promises");
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const authRoutes = require("./routes/auth");
 const kidsRoutes = require("./routes/kids");
 const choresRoutes = require("./routes/chores");
@@ -14,8 +15,65 @@ const storageRoutes = require("./routes/storage");
 const app = express();
 const port = process.env.PORT || 4000;
 const host = process.env.HOST || "0.0.0.0";
+const trustProxy = Number(process.env.TRUST_PROXY || 0);
 
-app.use(cors());
+if (trustProxy) {
+  app.set("trust proxy", trustProxy);
+}
+
+app.disable("x-powered-by");
+
+const allowedOrigins = (process.env.CORS_ORIGIN || process.env.SITE_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowAllOrigins = process.env.NODE_ENV !== "production" && allowedOrigins.length === 0;
+
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'", "'unsafe-inline'"],
+  styleSrc: ["'self'", "'unsafe-inline'"],
+  imgSrc: ["'self'", "data:"],
+  connectSrc: ["'self'"],
+  fontSrc: ["'self'", "data:"],
+  workerSrc: ["'self'"],
+  manifestSrc: ["'self'"],
+  objectSrc: ["'none'"],
+  baseUri: ["'self'"],
+  frameAncestors: ["'none'"],
+  formAction: ["'self'"]
+};
+
+if (process.env.NODE_ENV === "production") {
+  cspDirectives.upgradeInsecureRequests = [];
+}
+
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: cspDirectives
+    }
+  })
+);
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+      if (allowAllOrigins) {
+        return callback(null, true);
+      }
+      if (!allowedOrigins.length) {
+        return callback(null, false);
+      }
+      return callback(null, allowedOrigins.includes(origin));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+  })
+);
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
@@ -55,7 +113,16 @@ async function cleanupUploads() {
 cleanupUploads();
 setInterval(cleanupUploads, 12 * 60 * 60 * 1000);
 
-app.use("/uploads", express.static(uploadDir));
+app.use(
+  "/uploads",
+  express.static(uploadDir, {
+    setHeaders: (res) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+      res.setHeader("Content-Security-Policy", "default-src 'none'; img-src 'self' data:; sandbox");
+    }
+  })
+);
 app.use(express.static(clientDist));
 app.get("/app*", (req, res) => {
   res.sendFile(path.join(clientDist, "app", "index.html"));
